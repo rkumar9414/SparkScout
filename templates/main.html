@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ScoutSmart - VEX Competitions</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <h1>ScoutSmart - VEX Competitions</h1>
+    <p>Enter the competition name and location:</p>
+    <div class="search-container">
+        <input type="text" id="searchInput" placeholder="e.g., VEX High Stakes NJ States">
+        <button onclick="performSearch()">Search</button>
+    </div>
+
+    <!-- Competition List -->
+    <div class="competition-list">
+        <h2>Upcoming Competitions</h2>
+        <div id="eventsList"></div>
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+    <script>
+        // Fetch and display team events
+        async function displayTeamEvents(teamNumber) {
+            const response = await fetch(`/api/team-events/${teamNumber}`);
+            const data = await response.json();
+            const eventsList = document.getElementById("eventsList");
+            eventsList.innerHTML = "";
+
+            if (data.data) {
+                data.data.forEach(event => {
+                    const eventItem = document.createElement("div");
+                    eventItem.className = "event";
+                    eventItem.innerHTML = `
+                        <h3>${event.name}</h3>
+                        <p>Location: ${event.location.venue}, ${event.location.city}, ${event.location.region}</p>
+                        <p>Date: ${event.start}</p>
+                    `;
+                    eventsList.appendChild(eventItem);
+                });
+            } else {
+                eventsList.innerHTML = "<p>No events found.</p>";
+            }
+        }
+
+        // Example: Display events for team 750S
+        displayTeamEvents("750S");
+    </script>
+</body>
+</html>
