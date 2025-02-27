@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VEX Robotics Teams</title>
+    <style>
+        /* General Styles */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 20px;
+        }
+        
+        h2 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 20px;
+        }
+
+        /* Teams and Matches Container */
+        #teamsList, #matchesList {
+            list-style-type: none;
+            padding: 0;
+            max-width: 800px;
+            margin: 20px auto;
+        }
+
+        #teamsList li, #matchesList li {
+            background: #fff;
+            margin: 10px 0;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        #teamsList li strong, #matchesList li strong {
+            color: #2c3e50;
+            font-size: 1.1rem;
+        }
+
+        #teamsList li span, #matchesList li span {
+            display: block;
+            margin-top: 5px;
+            color: #666;
+        }
+
+        button {
+            padding: 8px 16px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #2980b9;
+        }
+
+        .no-results {
+            text-align: center;
+            color: #e74c3c;
+            font-size: 1.2rem;
+        }
+    </style>
+</head>
+<body>
+    <h1>VEX Robotics Teams</h1>
+    <h2>Teams</h2>
+    <ul id="teamsList"></ul>
+    <h2>Qualifying Matches</h2>
+    <ul id="matchesList"></ul>
+
+    <script>
+        // Function to get query parameter from URL
+        function getQueryParameter(name) {
+            let params = new URLSearchParams(window.location.search);
+            return params.get(name);
+        }
+
+        // Sample team data (50 teams)
+        const teamsData = {
+            1: Array.from({ length: 50 }, (_, i) => ({
+                id: 101 + i,
+                team_name: `Team ${String.fromCharCode(65 + i)}`,
+                number: `${100 + i}A`,
+                organization: `School ${String.fromCharCode(65 + i)}`,
+                grade: i % 2 === 0 ? "High School" : "Middle School"
+            }))
+        };
+
+        // Function to generate qualifying matches (50 matches, 2 teams per alliance)
+        function generateQualifyingMatches(teams) {
+            const matches = [];
+            const totalTeams = teams.length;
+
+            for (let i = 0; i < 50; i++) {
+                const team1 = teams[Math.floor(Math.random() * totalTeams)];
+                const team2 = teams[Math.floor(Math.random() * totalTeams)];
+                const team3 = teams[Math.floor(Math.random() * totalTeams)];
+                const team4 = teams[Math.floor(Math.random() * totalTeams)];
+
+                matches.push({
+                    matchId: i + 1,
+                    alliance1: [team1, team2],
+                    alliance2: [team3, team4]
+                });
+            }
+
+            return matches;
+        }
+
+        // Display teams on the page
+        function displayTeams(teams) {
+            const list = document.getElementById("teamsList");
+            list.innerHTML = ""; // Clear previous results
+
+            if (teams.length === 0) {
+                list.innerHTML = "<li class='no-results'>No teams found for this competition.</li>";
+            } else {
+                teams.forEach(team => {
+                    const item = document.createElement("li");
+                    item.innerHTML = `
+                        <strong>${team.team_name} (${team.number})</strong>
+                        <span>Organization: ${team.organization}</span>
+                        <span>Grade: ${team.grade}</span>
+                        <button onclick="handleViewDetails(${team.id})">View Details</button>
+                    `;
+                    list.appendChild(item);
+                });
+            }
+        }
+
+        // Display matches on the page
+        function displayMatches(matches) {
+            const list = document.getElementById("matchesList");
+            list.innerHTML = ""; // Clear previous results
+
+            if (matches.length === 0) {
+                list.innerHTML = "<li class='no-results'>No matches scheduled for this competition.</li>";
+            } else {
+                matches.forEach(match => {
+                    const item = document.createElement("li");
+                    item.innerHTML = `
+                        <strong>Match ${match.matchId}</strong>
+                        <span>Alliance 1: ${match.alliance1[0].team_name} (${match.alliance1[0].number}) & ${match.alliance1[1].team_name} (${match.alliance1[1].number})</span>
+                        <span>Alliance 2: ${match.alliance2[0].team_name} (${match.alliance2[0].number}) & ${match.alliance2[1].team_name} (${match.alliance2[1].number})</span>
+                    `;
+                    list.appendChild(item);
+                });
+            }
+        }
+
+        // Handle "View Details" button click
+        function handleViewDetails(teamId) {
+            console.log("View Details button clicked for team ID:", teamId);
+            // Redirect to the team details page with the team ID
+            window.location.href = `team-details.html?teamId=${teamId}`;
+        }
+
+        // Main function to handle and display teams and matches
+        const eventId = getQueryParameter("eventId");
+        if (eventId) {
+            const teams = teamsData[eventId] || [];
+            displayTeams(teams);
+
+            if (teams.length > 3) {
+                const matches = generateQualifyingMatches(teams);
+                displayMatches(matches);
+            } else {
+                const matchesList = document.getElementById("matchesList");
+                matchesList.innerHTML = "<li class='no-results'>Not enough teams to generate matches.</li>";
+            }
+        } else {
+            alert("No event ID found. Please try again.");
+            window.location.href = "index.html"; // Redirect back to the main page
+        }
+    </script>
+</body>
+</html>

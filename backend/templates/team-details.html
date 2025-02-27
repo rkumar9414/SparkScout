@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Team Details</title>
+    <style>
+        /* General Styles */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 20px;
+        }
+
+        .team-info {
+            max-width: 800px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .team-info strong {
+            color: #2c3e50;
+            font-size: 1.1rem;
+        }
+
+        .team-info span {
+            display: block;
+            margin-top: 5px;
+            color: #666;
+        }
+
+        .metrics-section {
+            max-width: 800px;
+            margin: 20px auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .metrics-section h2 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .metrics-section p {
+            margin: 5px 0;
+            color: #666;
+        }
+
+        .scouting-section {
+            max-width: 800px;
+            margin: 20px auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .scouting-section h2 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .scouting-section label {
+            display: block;
+            margin-top: 10px;
+            color: #333;
+            font-weight: bold;
+        }
+
+        .scouting-section input,
+        .scouting-section textarea {
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.3s ease;
+        }
+
+        .scouting-section input:focus,
+        .scouting-section textarea:focus {
+            border-color: #3498db;
+        }
+
+        .scouting-section button {
+            padding: 8px 16px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            margin-top: 10px;
+        }
+
+        .scouting-section button:hover {
+            background-color: #2980b9;
+        }
+
+        .notes-section {
+            max-width: 800px;
+            margin: 20px auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .notes-section h2 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .notes-section textarea {
+            width: 100%;
+            height: 100px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.3s ease;
+        }
+
+        .notes-section textarea:focus {
+            border-color: #3498db;
+        }
+
+        .notes-section button {
+            padding: 8px 16px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            margin-top: 10px;
+        }
+
+        .notes-section button:hover {
+            background-color: #2980b9;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Team Details</h1>
+    <div class="team-info" id="teamInfo"></div>
+    <div class="metrics-section" id="metricsSection"></div>
+
+    <!-- Scouting Section -->
+    <div class="scouting-section">
+        <h2>Scouting Data</h2>
+        <form id="scoutingForm">
+            <label for="autonomousPoints">Autonomous Points:</label>
+            <input type="number" id="autonomousPoints" name="autonomousPoints">
+
+            <label for="autonomousTasks">Autonomous Tasks Completed:</label>
+            <textarea id="autonomousTasks" name="autonomousTasks" placeholder="e.g., scored rings, parked"></textarea>
+
+            <label for="driverPoints">Driver-Controlled Points:</label>
+            <input type="number" id="driverPoints" name="driverPoints">
+
+            <label for="driverEfficiency">Driver Efficiency (points per minute):</label>
+            <input type="number" id="driverEfficiency" name="driverEfficiency">
+
+            <label for="defensivePlays">Defensive Plays:</label>
+            <input type="number" id="defensivePlays" name="defensivePlays">
+
+            <label for="endgamePoints">Endgame Points:</label>
+            <input type="number" id="endgamePoints" name="endgamePoints">
+
+            <label for="endgameTasks">Endgame Tasks Completed:</label>
+            <textarea id="endgameTasks" name="endgameTasks" placeholder="e.g., climbed, parked"></textarea>
+
+            <label for="penalties">Penalties:</label>
+            <input type="number" id="penalties" name="penalties">
+
+            <button type="submit">Save Scouting Data</button>
+        </form>
+    </div>
+
+    <!-- Notes Section -->
+    <div class="notes-section">
+        <h2>Notes</h2>
+        <textarea id="notesInput" placeholder="Add notes about this team..."></textarea>
+        <button onclick="saveNotes()">Save Notes</button>
+    </div>
+
+    <script>
+        // Function to get query parameter from URL
+        function getQueryParameter(name) {
+            let params = new URLSearchParams(window.location.search);
+            return params.get(name);
+        }
+
+        // Sample team data (replace this with your actual data)
+        const teamsData = {
+            101: {
+                team_name: "Team A",
+                number: "123A",
+                organization: "School A",
+                grade: "High School",
+                opr: 45.3,
+                dpr: 30.2,
+                ccwm: 15.1,
+                epr: 40.5,
+                ap: 12,
+                win_percentage: 75.0,
+                elo_rating: 1600
+            },
+            102: {
+                team_name: "Team B",
+                number: "456B",
+                organization: "School B",
+                grade: "Middle School",
+                opr: 38.7,
+                dpr: 25.4,
+                ccwm: 13.3,
+                epr: 35.2,
+                ap: 8,
+                win_percentage: 60.0,
+                elo_rating: 1450
+            },
+            201: {
+                team_name: "Team C",
+                number: "789C",
+                organization: "School C",
+                grade: "High School",
+                opr: 50.1,
+                dpr: 35.6,
+                ccwm: 14.5,
+                epr: 45.8,
+                ap: 15,
+                win_percentage: 80.0,
+                elo_rating: 1700
+            },
+            401: {
+                team_name: "Team D",
+                number: "101D",
+                organization: "School D",
+                grade: "High School",
+                opr: 42.5,
+                dpr: 28.9,
+                ccwm: 13.6,
+                epr: 38.7,
+                ap: 10,
+                win_percentage: 65.0,
+                elo_rating: 1550
+            }
+        };
+
+        // Display team details on the page
+        function displayTeamDetails(team) {
+            const teamInfo = document.getElementById("teamInfo");
+            teamInfo.innerHTML = `
+                <strong>${team.team_name} (${team.number})</strong>
+                <span>Organization: ${team.organization}</span>
+                <span>Grade: ${team.grade}</span>
+            `;
+
+            const metricsSection = document.getElementById("metricsSection");
+            metricsSection.innerHTML = `
+                <h2>Performance Metrics</h2>
+                <p><strong>OPR (Offensive Power Rating):</strong> ${team.opr}</p>
+                <p><strong>DPR (Defensive Power Rating):</strong> ${team.dpr}</p>
+                <p><strong>CCWM (Calculated Contribution to Winning Margin):</strong> ${team.ccwm}</p>
+                <p><strong>EPR (Effective Power Rating):</strong> ${team.epr}</p>
+                <p><strong>AP (Autonomous Points):</strong> ${team.ap}</p>
+                <p><strong>Win Percentage:</strong> ${team.win_percentage}%</p>
+                <p><strong>Elo Rating:</strong> ${team.elo_rating}</p>
+            `;
+        }
+
+        // Save scouting data to localStorage
+        function saveScoutingData(event) {
+            event.preventDefault();
+
+            const teamId = getQueryParameter("teamId");
+            const scoutingData = {
+                autonomousPoints: document.getElementById("autonomousPoints").value,
+                autonomousTasks: document.getElementById("autonomousTasks").value,
+                driverPoints: document.getElementById("driverPoints").value,
+                driverEfficiency: document.getElementById("driverEfficiency").value,
+                defensivePlays: document.getElementById("defensivePlays").value,
+                endgamePoints: document.getElementById("endgamePoints").value,
+                endgameTasks: document.getElementById("endgameTasks").value,
+                penalties: document.getElementById("penalties").value
+            };
+
+            if (teamId) {
+                localStorage.setItem(`team-${teamId}-scouting`, JSON.stringify(scoutingData));
+                alert("Scouting data saved successfully!");
+            } else {
+                alert("Failed to save scouting data.");
+            }
+        }
+
+        // Load scouting data from localStorage
+        function loadScoutingData() {
+            const teamId = getQueryParameter("teamId");
+            const scoutingData = localStorage.getItem(`team-${teamId}-scouting`);
+
+            if (scoutingData) {
+                const data = JSON.parse(scoutingData);
+                document.getElementById("autonomousPoints").value = data.autonomousPoints;
+                document.getElementById("autonomousTasks").value = data.autonomousTasks;
+                document.getElementById("driverPoints").value = data.driverPoints;
+                document.getElementById("driverEfficiency").value = data.driverEfficiency;
+                document.getElementById("defensivePlays").value = data.defensivePlays;
+                document.getElementById("endgamePoints").value = data.endgamePoints;
+                document.getElementById("endgameTasks").value = data.endgameTasks;
+                document.getElementById("penalties").value = data.penalties;
+            }
+        }
+
+        // Save notes to localStorage
+        function saveNotes() {
+            const teamId = getQueryParameter("teamId");
+            const notes = document.getElementById("notesInput").value;
+
+            if (teamId && notes) {
+                localStorage.setItem(`team-${teamId}-notes`, notes);
+                alert("Notes saved successfully!");
+            } else {
+                alert("Please enter notes before saving.");
+            }
+        }
+
+        // Load notes from localStorage
+        function loadNotes() {
+            const teamId = getQueryParameter("teamId");
+            const notes = localStorage.getItem(`team-${teamId}-notes`);
+
+            if (notes) {
+                document.getElementById("notesInput").value = notes;
+            }
+        }
+
+        // Main function to handle and display team details
+        const teamId = getQueryParameter("teamId");
+        if (teamId) {
+            const team = teamsData[teamId];
+            if (team) {
+                displayTeamDetails(team);
+                loadScoutingData();
+                loadNotes();
+            } else {
+                alert("Team not found. Please try again.");
+                window.location.href = "main.html"; // Redirect back to the main page
+            }
+        } else {
+            alert("No team ID found. Please try again.");
+            window.location.href = "main.html"; // Redirect back to the main page
+        }
+
+        // Add event listener for scouting form submission
+        document.getElementById("scoutingForm").addEventListener("submit", saveScoutingData);
+    </script>
+
+</body>
+</html>
