@@ -36,7 +36,7 @@
                     eventItem.innerHTML = `
                         <h3>${event.name}</h3>
                         <p>Location: ${event.location.venue}, ${event.location.city}, ${event.location.region}</p>
-                        <p>Date: ${event.start}</p>
+                        <p>Date: ${new Date(event.start).toLocaleDateString()}</p>
                     `;
                     eventsList.appendChild(eventItem);
                 });
@@ -47,6 +47,16 @@
 
         // Example: Display events for team 750S
         displayTeamEvents("750S");
+
+        // Handle search button click
+        function performSearch() {
+            const query = document.getElementById("searchInput").value.trim();
+            if (query) {
+                window.location.href = `/results?search=${encodeURIComponent(query)}`;
+            } else {
+                alert("Please enter a search term.");
+            }
+        }
     </script>
 </body>
 </html>

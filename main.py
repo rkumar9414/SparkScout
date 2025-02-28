@@ -1,9 +1,14 @@
 from flask import Flask, jsonify, render_template
 import requests
-from backend.api.auth import get_headers, BASE_URL  # Import from auth.py
-# main.py
+from datetime import datetime
+from backend.api.auth import get_headers, BASE_URL
+
 # Initialize Flask app
 app = Flask(__name__)
+
+# Function to sort events from most recent to oldest
+def sort_events_newest_to_oldest(events):
+    return sorted(events, key=lambda x: datetime.fromisoformat(x["start"]), reverse=True)
 
 # Function to Get Team ID
 def get_team_id(team_number):
@@ -22,7 +27,7 @@ def get_team_id(team_number):
         print(f"Error: {response.status_code}")
         return None
 
-# Function to Fetch Team Events (with pagination)
+# Function to Fetch Team Events (with pagination and sorting)
 def get_team_events(team_id):
     all_events = []
     page = 1
@@ -38,22 +43,7 @@ def get_team_events(team_id):
         else:
             print(f"Error: {response.status_code}")
             return None
-    return {"data": all_events}
-
-# Function to Extract Season Name
-def extract_season_name(events):
-    for event in events["data"]:
-        if "2024-2025" in event["season"]["name"]:  # Look for the 2024-2025 season
-            return event["season"]["name"]
-    return None
-
-# Function to Filter Events by Season
-def filter_events_by_season(events, season_name):
-    filtered_events = []
-    for event in events["data"]:
-        if event["season"]["name"] == season_name:
-            filtered_events.append(event)
-    return filtered_events
+    return {"data": sort_events_newest_to_oldest(all_events)}
 
 # Serve the main page
 @app.route('/')
@@ -69,24 +59,6 @@ def team_events(team_number):
         if events:
             return jsonify(events)
     return jsonify({"error": "Failed to fetch team events"}), 500
-
-# API endpoint to get team details
-@app.route('/api/team-details/<team_id>')
-def team_details(team_id):
-    url = f"{BASE_URL}/teams/{team_id}"
-    response = requests.get(url, headers=get_headers())
-    if response.status_code == 200:
-        return jsonify(response.json())
-    return jsonify({"error": "Failed to fetch team details"}), 500
-
-# API endpoint to get event details
-@app.route('/api/event-details/<event_id>')
-def event_details(event_id):
-    url = f"{BASE_URL}/events/{event_id}"
-    response = requests.get(url, headers=get_headers())
-    if response.status_code == 200:
-        return jsonify(response.json())
-    return jsonify({"error": "Failed to fetch event details"}), 500
 
 # Run the Flask app
 if __name__ == '__main__':
