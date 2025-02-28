@@ -8,7 +8,7 @@
 </head>
 <body>
     <h1>
-        <a href="/" style="text-decoration: none; color: inherit;">SparkScout - VEX Competitions </a>
+        <a href="/" class="header-link">SparkScout - VEX Competitions</a>
     </h1>
     <p>Enter the competition name and location:</p>
     <div class="search-container">
@@ -23,5 +23,62 @@
     </div>
 
     <script src="{{ url_for('static', filename='script.js') }}"></script>
+    <script>
+        // Fetch and display team events
+        async function displayTeamEvents(teamNumber) {
+            const events = await fetchTeamEvents(teamNumber);
+            const eventsList = document.getElementById("eventsList");
+            eventsList.innerHTML = "";
+
+            if (events.data) {
+                events.data.forEach(event => {
+                    const eventItem = document.createElement("div");
+                    eventItem.className = "event";
+                    eventItem.innerHTML = `
+                        <h3>${event.name}</h3>
+                        <p>Location: ${event.location.venue}, ${event.location.city}, ${event.location.region}</p>
+                        <p>Date: ${new Date(event.start).toLocaleDateString()}</p>
+                        <button onclick="handleViewTeams(${event.id})">View Teams</button>
+                    `;
+                    eventsList.appendChild(eventItem);
+                });
+            } else {
+                eventsList.innerHTML = "<p>No events found.</p>";
+            }
+        }
+
+        // Handle "View Teams" button click
+        async function handleViewTeams(eventId) {
+            const teams = await fetchEventTeams(eventId);
+            const eventsList = document.getElementById("eventsList");
+            eventsList.innerHTML = ""; // Clear the events list
+
+            if (teams && teams.data) {
+                const teamsList = document.createElement("div");
+                teamsList.className = "teams-list";
+                teamsList.innerHTML = "<h2>Teams Attending</h2>";
+
+                teams.data.forEach(team => {
+                    const teamItem = document.createElement("div");
+                    teamItem.className = "team";
+                    teamItem.innerHTML = `
+                        <a href="/team/${team.id}" style="text-decoration: none; color: inherit;">
+                            <strong>${team.team_name} (${team.number})</strong>
+                            <span>Organization: ${team.organization}</span>
+                            <span>Grade: ${team.grade}</span>
+                        </a>
+                    `;
+                    teamsList.appendChild(teamItem);
+                });
+
+                eventsList.appendChild(teamsList);
+            } else {
+                eventsList.innerHTML = "<p>No teams found for this event.</p>";
+            }
+        }
+
+        // Example: Display events for team 750S
+        displayTeamEvents("750S");
+    </script>
 </body>
 </html>

@@ -45,6 +45,22 @@ def get_team_events(team_id):
             return None
     return {"data": sort_events_newest_to_oldest(all_events)}
 
+# Function to Fetch Team Details
+def get_team_details(team_id):
+    url = f"{BASE_URL}/teams/{team_id}"
+    response = requests.get(url, headers=get_headers())
+    if response.status_code == 200:
+        return response.json()
+    return None
+
+# Function to Fetch Team Skills
+def get_team_skills(team_id):
+    url = f"{BASE_URL}/teams/{team_id}/skills"
+    response = requests.get(url, headers=get_headers())
+    if response.status_code == 200:
+        return response.json()
+    return None
+
 # Serve the main page
 @app.route('/')
 def index():
@@ -74,6 +90,18 @@ def event_teams(event_id):
         return jsonify(response.json())
     print(f"Failed to fetch event teams. Status code: {response.status_code}")  # Debugging line
     return jsonify({"error": "Failed to fetch event teams"}), 500
+
+# New route to display team details
+@app.route('/team/<team_id>')
+def team_details(team_id):
+    team = get_team_details(team_id)
+    skills = get_team_skills(team_id)
+    print(f"Team: {team}")  # Debugging line
+    print(f"Skills: {skills}")  # Debugging line
+    if team and skills:
+        return render_template('team-details.html', team=team, skills=skills)
+    else:
+        return render_template('team-details.html', team=team, skills=None)
 
 # Run the Flask app
 if __name__ == '__main__':

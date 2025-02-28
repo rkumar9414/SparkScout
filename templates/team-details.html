@@ -3,149 +3,53 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Team Details</title>
+    <title>Team Details - SparkScout</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
-    <h1>Team Details</h1>
-    <div class="team-info" id="teamInfo"></div>
-    <div class="metrics-section" id="metricsSection"></div>
+    <h1>
+        <a href="/" class="header-link">SparkScout - VEX Competitions</a>
+    </h1>
 
-    <!-- Scouting Section -->
-    <div class="scouting-section">
-        <h2>Scouting Data</h2>
-        <form id="scoutingForm">
-            <label for="autonomousPoints">Autonomous Points:</label>
-            <input type="number" id="autonomousPoints" name="autonomousPoints">
+    <div class="team-details">
+        <h2>{{ team.team_name }} ({{ team.number }})</h2>
+        <p><strong>Organization:</strong> {{ team.organization }}</p>
+        <p><strong>Grade:</strong> {{ team.grade }}</p>
+        <p><strong>Location:</strong> {{ team.location.city }}, {{ team.location.region }}, {{ team.location.country }}</p>
 
-            <label for="autonomousTasks">Autonomous Tasks Completed:</label>
-            <textarea id="autonomousTasks" name="autonomousTasks" placeholder="e.g., scored rings, parked"></textarea>
+        <h3>Skills Challenge</h3>
+        {% if skills and skills.data %}
+            {% set programming_skills = skills.data | selectattr("type", "equalto", "programming") | first %}
+            {% set driver_skills = skills.data | selectattr("type", "equalto", "driver") | first %}
 
-            <label for="driverPoints">Driver-Controlled Points:</label>
-            <input type="number" id="driverPoints" name="driverPoints">
+            {% if programming_skills %}
+                <p><strong>Programming Skills:</strong> {{ programming_skills.score }}</p>
+            {% else %}
+                <p><strong>Programming Skills:</strong> N/A</p>
+            {% endif %}
 
-            <label for="driverEfficiency">Driver Efficiency (points per minute):</label>
-            <input type="number" id="driverEfficiency" name="driverEfficiency">
+            {% if driver_skills %}
+                <p><strong>Driver Skills:</strong> {{ driver_skills.score }}</p>
+            {% else %}
+                <p><strong>Driver Skills:</strong> N/A</p>
+            {% endif %}
 
-            <label for="defensivePlays">Defensive Plays:</label>
-            <input type="number" id="defensivePlays" name="defensivePlays">
+            {% if programming_skills and driver_skills %}
+                <p><strong>Combined Skills:</strong> {{ programming_skills.score + driver_skills.score }}</p>
+            {% else %}
+                <p><strong>Combined Skills:</strong> N/A</p>
+            {% endif %}
+        {% else %}
+            <p>No skills data available for this team.</p>
+        {% endif %}
 
-            <label for="endgamePoints">Endgame Points:</label>
-            <input type="number" id="endgamePoints" name="endgamePoints">
-
-            <label for="endgameTasks">Endgame Tasks Completed:</label>
-            <textarea id="endgameTasks" name="endgameTasks" placeholder="e.g., climbed, parked"></textarea>
-
-            <label for="penalties">Penalties:</label>
-            <input type="number" id="penalties" name="penalties">
-
-            <button type="submit">Save Scouting Data</button>
-        </form>
+        <h3>Performance Metrics</h3>
+        <p><strong>OPR:</strong> N/A</p>
+        <p><strong>DPR:</strong> N/A</p>
+        <p><strong>CCWM:</strong> N/A</p>
+        <p><strong>WP:</strong> N/A</p>
+        <p><strong>AP:</strong> N/A</p>
+        <p><strong>SP:</strong> N/A</p>
     </div>
-
-    <!-- Notes Section -->
-    <div class="notes-section">
-        <h2>Notes</h2>
-        <textarea id="notesInput" placeholder="Add notes about this team..."></textarea>
-        <button onclick="saveNotes()">Save Notes</button>
-    </div>
-
-    <script src="{{ url_for('static', filename='script.js') }}"></script>
-    <script>
-        // Fetch and display team details
-        const teamId = new URLSearchParams(window.location.search).get("teamId");
-        if (teamId) {
-            // Sample team data
-            const team = {
-                team_name: "Team A",
-                number: "123A",
-                organization: "School A",
-                grade: "High School",
-                opr: 45.3,
-                dpr: 30.2,
-                ccwm: 15.1,
-                epr: 40.5,
-                ap: 12,
-                win_percentage: 75.0,
-                elo_rating: 1600
-            };
-
-            // Display team details
-            const teamInfo = document.getElementById("teamInfo");
-            teamInfo.innerHTML = `
-                <strong>${team.team_name} (${team.number})</strong>
-                <span>Organization: ${team.organization}</span>
-                <span>Grade: ${team.grade}</span>
-            `;
-
-            // Display performance metrics
-            const metricsSection = document.getElementById("metricsSection");
-            metricsSection.innerHTML = `
-                <h2>Performance Metrics</h2>
-                <p><strong>OPR (Offensive Power Rating):</strong> ${team.opr}</p>
-                <p><strong>DPR (Defensive Power Rating):</strong> ${team.dpr}</p>
-                <p><strong>CCWM (Calculated Contribution to Winning Margin):</strong> ${team.ccwm}</p>
-                <p><strong>EPR (Effective Power Rating):</strong> ${team.epr}</p>
-                <p><strong>AP (Autonomous Points):</strong> ${team.ap}</p>
-                <p><strong>Win Percentage:</strong> ${team.win_percentage}%</p>
-                <p><strong>Elo Rating:</strong> ${team.elo_rating}</p>
-            `;
-        } else {
-            alert("No team ID found. Please try again.");
-            window.location.href = "/";
-        }
-
-        // Save scouting data to localStorage
-        document.getElementById("scoutingForm").addEventListener("submit", function(event) {
-            event.preventDefault();
-            const scoutingData = {
-                autonomousPoints: document.getElementById("autonomousPoints").value,
-                autonomousTasks: document.getElementById("autonomousTasks").value,
-                driverPoints: document.getElementById("driverPoints").value,
-                driverEfficiency: document.getElementById("driverEfficiency").value,
-                defensivePlays: document.getElementById("defensivePlays").value,
-                endgamePoints: document.getElementById("endgamePoints").value,
-                endgameTasks: document.getElementById("endgameTasks").value,
-                penalties: document.getElementById("penalties").value
-            };
-            localStorage.setItem(`team-${teamId}-scouting`, JSON.stringify(scoutingData));
-            alert("Scouting data saved successfully!");
-        });
-
-        // Save notes to localStorage
-        function saveNotes() {
-            const notes = document.getElementById("notesInput").value;
-            if (notes) {
-                localStorage.setItem(`team-${teamId}-notes`, notes);
-                alert("Notes saved successfully!");
-            } else {
-                alert("Please enter notes before saving.");
-            }
-        }
-
-        // Load saved scouting data and notes
-        function loadSavedData() {
-            const scoutingData = localStorage.getItem(`team-${teamId}-scouting`);
-            if (scoutingData) {
-                const data = JSON.parse(scoutingData);
-                document.getElementById("autonomousPoints").value = data.autonomousPoints;
-                document.getElementById("autonomousTasks").value = data.autonomousTasks;
-                document.getElementById("driverPoints").value = data.driverPoints;
-                document.getElementById("driverEfficiency").value = data.driverEfficiency;
-                document.getElementById("defensivePlays").value = data.defensivePlays;
-                document.getElementById("endgamePoints").value = data.endgamePoints;
-                document.getElementById("endgameTasks").value = data.endgameTasks;
-                document.getElementById("penalties").value = data.penalties;
-            }
-
-            const notes = localStorage.getItem(`team-${teamId}-notes`);
-            if (notes) {
-                document.getElementById("notesInput").value = notes;
-            }
-        }
-
-        // Load saved data when the page loads
-        loadSavedData();
-    </script>
 </body>
 </html>
