@@ -30,6 +30,18 @@ h1 {
     margin-bottom: 30px;
 }
 
+/* styles.css */
+
+/* Style for the heading link */
+h1 a {
+    text-decoration: none; /* Remove underline */
+    color: inherit; /* Inherit the color from the parent */
+}
+
+h1 a:hover {
+    color: #1a237e; /* Change color on hover */
+}
+
 p {
     margin-bottom: 20px;
 }
