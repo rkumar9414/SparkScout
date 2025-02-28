@@ -60,6 +60,21 @@ def team_events(team_number):
             return jsonify(events)
     return jsonify({"error": "Failed to fetch team events"}), 500
 
+# New endpoint to fetch teams for an event
+@app.route('/api/event-teams/<event_id>')
+def event_teams(event_id):
+    print(f"Fetching teams for event ID: {event_id}")  # Debugging line
+    url = f"{BASE_URL}/events/{event_id}/teams"
+    print(f"API URL: {url}")  # Debugging line
+    headers = get_headers()
+    print(f"Headers: {headers}")  # Debugging line
+    response = requests.get(url, headers=headers)
+    print(f"Response status code: {response.status_code}")  # Debugging line
+    if response.status_code == 200:
+        return jsonify(response.json())
+    print(f"Failed to fetch event teams. Status code: {response.status_code}")  # Debugging line
+    return jsonify({"error": "Failed to fetch event teams"}), 500
+
 # Run the Flask app
 if __name__ == '__main__':
     app.run(debug=True)
