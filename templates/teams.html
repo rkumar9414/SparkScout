@@ -7,9 +7,18 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
-    <h1>VEX Robotics Teams</h1>
-    <h2>Teams</h2>
-    <ul id="teamsList"></ul>
+    <h1>
+        <a href="/" class="header-link">SparkScout - VEX Competitions</a>
+    </h1>
+
+    <div class="competition-list">
+        <!-- Dynamic competition name will go here -->
+        <h2 id="competitionName">Upcoming Competitions</h2>
+        <div id="teamsList"></div>
+        <!-- Note at the bottom -->
+        <p><em>Note: Only teams registered on RobotEvents are displayed. If a team is not listed here, it is not available in the API.</em></p>
+    </div>
+
     <h2>Qualifying Matches</h2>
     <ul id="matchesList"></ul>
 
@@ -18,6 +27,17 @@
         // Fetch and display teams and matches
         const eventId = new URLSearchParams(window.location.search).get("eventId");
         if (eventId) {
+            // Fetch competition name and update the header
+            fetch(`/api/event-details/${eventId}`)
+                .then(response => response.json())
+                .then(event => {
+                    const competitionName = document.getElementById("competitionName");
+                    competitionName.innerText = event.name; // Set the competition name
+                })
+                .catch(error => {
+                    console.error("Error fetching event details:", error);
+                });
+
             // Sample team data
             const teams = Array.from({ length: 50 }, (_, i) => ({
                 id: 101 + i,
@@ -30,7 +50,8 @@
             // Display teams
             const teamsList = document.getElementById("teamsList");
             teams.forEach(team => {
-                const item = document.createElement("li");
+                const item = document.createElement("div");
+                item.className = "team";
                 item.innerHTML = `
                     <strong>${team.team_name} (${team.number})</strong>
                     <span>Organization: ${team.organization}</span>

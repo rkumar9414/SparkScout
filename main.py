@@ -1,6 +1,7 @@
 from flask import Flask, jsonify, render_template
 import requests
 from datetime import datetime
+import time  # For rate limiting
 from backend.api.auth import get_headers, BASE_URL
 
 # Initialize Flask app
@@ -79,17 +80,23 @@ def team_events(team_number):
 # New endpoint to fetch teams for an event
 @app.route('/api/event-teams/<event_id>')
 def event_teams(event_id):
-    print(f"Fetching teams for event ID: {event_id}")  # Debugging line
-    url = f"{BASE_URL}/events/{event_id}/teams"
-    print(f"API URL: {url}")  # Debugging line
-    headers = get_headers()
-    print(f"Headers: {headers}")  # Debugging line
-    response = requests.get(url, headers=headers)
-    print(f"Response status code: {response.status_code}")  # Debugging line
-    if response.status_code == 200:
-        return jsonify(response.json())
-    print(f"Failed to fetch event teams. Status code: {response.status_code}")  # Debugging line
-    return jsonify({"error": "Failed to fetch event teams"}), 500
+    all_teams = []
+    page = 1
+    while True:
+        url = f"{BASE_URL}/events/{event_id}/teams?page={page}"
+        response = requests.get(url, headers=get_headers())
+        if response.status_code == 200:
+            data = response.json()
+            print(f"Page {page} data: {data}")  # Debugging: Log API response
+            all_teams.extend(data["data"])
+            if not data["meta"]["next_page_url"]:  # Stop if there are no more pages
+                break
+            page += 1
+            time.sleep(1)  # Add a 1-second delay to avoid rate limiting
+        else:
+            print(f"Failed to fetch event teams. Status code: {response.status_code}")
+            return jsonify({"error": "Failed to fetch event teams"}), 500
+    return jsonify({"data": all_teams})
 
 # New route to display team details
 @app.route('/team/<team_id>')

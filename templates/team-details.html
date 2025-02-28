@@ -19,26 +19,18 @@
 
         <h3>Skills Challenge</h3>
         {% if skills and skills.data %}
-            {% set programming_skills = skills.data | selectattr("type", "equalto", "programming") | first %}
-            {% set driver_skills = skills.data | selectattr("type", "equalto", "driver") | first %}
+            {% set programming_skills = skills.data | selectattr("type", "equalto", "programming") | list %}
+            {% set driver_skills = skills.data | selectattr("type", "equalto", "driver") | list %}
 
-            {% if programming_skills %}
-                <p><strong>Programming Skills:</strong> {{ programming_skills.score }}</p>
-            {% else %}
-                <p><strong>Programming Skills:</strong> N/A</p>
-            {% endif %}
-
-            {% if driver_skills %}
-                <p><strong>Driver Skills:</strong> {{ driver_skills.score }}</p>
-            {% else %}
-                <p><strong>Driver Skills:</strong> N/A</p>
-            {% endif %}
-
-            {% if programming_skills and driver_skills %}
-                <p><strong>Combined Skills:</strong> {{ programming_skills.score + driver_skills.score }}</p>
-            {% else %}
-                <p><strong>Combined Skills:</strong> N/A</p>
-            {% endif %}
+            <p><strong>Programming Skills:</strong> {{ programming_skills[0].score if programming_skills else "N/A" }}</p>
+            <p><strong>Driver Skills:</strong> {{ driver_skills[0].score if driver_skills else "N/A" }}</p>
+            <p><strong>Combined Skills:</strong> 
+                {% if programming_skills and driver_skills %}
+                    {{ programming_skills[0].score + driver_skills[0].score }}
+                {% else %}
+                    N/A
+                {% endif %}
+            </p>
         {% else %}
             <p>No skills data available for this team.</p>
         {% endif %}
