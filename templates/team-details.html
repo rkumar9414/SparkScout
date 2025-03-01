@@ -19,11 +19,42 @@
 
         <h3>Skills Challenge</h3>
         {% if skills and skills.data %}
+            {# Extract programming and driver skills from the skills data #}
             {% set programming_skills = skills.data | selectattr("type", "equalto", "programming") | list %}
             {% set driver_skills = skills.data | selectattr("type", "equalto", "driver") | list %}
 
-            <p><strong>Programming Skills:</strong> {{ programming_skills[0].score if programming_skills else "N/A" }}</p>
-            <p><strong>Driver Skills:</strong> {{ driver_skills[0].score if driver_skills else "N/A" }}</p>
+            {# Debugging: Log skills data to the console #}
+            <script>
+                // Safely convert Python data to JSON and assign to JavaScript variables
+                const skillsData = JSON.parse('{{ skills.data | tojson | safe }}');
+                const programmingSkills = JSON.parse('{{ programming_skills | tojson | safe }}');
+                const driverSkills = JSON.parse('{{ driver_skills | tojson | safe }}');
+            
+                // Log the data to the console
+                console.log("Skills Data:", skillsData);
+                console.log("Programming Skills:", programmingSkills);
+                console.log("Driver Skills:", driverSkills);
+            </script>
+
+            {# Display programming skills score #}
+            <p><strong>Programming Skills:</strong> 
+                {% if programming_skills %}
+                    {{ programming_skills[0].score }}
+                {% else %}
+                    N/A
+                {% endif %}
+            </p>
+
+            {# Display driver skills score #}
+            <p><strong>Driver Skills:</strong> 
+                {% if driver_skills %}
+                    {{ driver_skills[0].score }}
+                {% else %}
+                    N/A
+                {% endif %}
+            </p>
+
+            {# Display combined skills score #}
             <p><strong>Combined Skills:</strong> 
                 {% if programming_skills and driver_skills %}
                     {{ programming_skills[0].score + driver_skills[0].score }}
@@ -42,6 +73,114 @@
         <p><strong>WP:</strong> N/A</p>
         <p><strong>AP:</strong> N/A</p>
         <p><strong>SP:</strong> N/A</p>
+
+        <!-- Notes Section -->
+        <h3>Notes</h3>
+        <form id="noteForm">
+            <textarea id="noteInput" placeholder="Add a note about this team..." required></textarea>
+            <button type="submit">Save Note</button>
+        </form>
+        <div id="notesList">
+            {% if notes %}
+                {% for note in notes %}
+                    <p>{{ note.note }}</p>
+                {% endfor %}
+            {% else %}
+                <p>No notes yet.</p>
+            {% endif %}
+        </div>
     </div>
+
+    <script>
+        // Extract teamId from the URL path (e.g., /team/123)
+        const teamId = window.location.pathname.split('/').pop();
+
+        // Function to save a note
+        async function saveNote(event) {
+            event.preventDefault(); // Prevent form submission from reloading the page
+
+            const note = document.getElementById('noteInput').value;
+            if (!note) {
+                alert("Please enter a note.");
+                return;
+            }
+
+            console.log("Saving note:", note); // Debugging
+
+            try {
+                const response = await fetch(`/api/team/${teamId}/notes`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ note }),
+                });
+
+                console.log("Response status:", response.status); // Debugging
+                console.log("Response OK:", response.ok); // Debugging
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    console.error("Error response:", errorData); // Debugging
+                    throw new Error(errorData.error || "Failed to save note.");
+                }
+
+                const data = await response.json();
+                console.log("Response data:", data); // Debugging
+
+                if (data.message) {
+                    // Show confirmation message
+                    const confirmationMessage = document.createElement('p');
+                    confirmationMessage.textContent = "Note saved successfully!";
+                    confirmationMessage.style.color = "green";
+                    document.getElementById('notesList').prepend(confirmationMessage);
+
+                    // Clear the input
+                    document.getElementById('noteInput').value = '';
+
+                    // Refresh the notes list
+                    loadNotes();
+                } else {
+                    alert("Failed to save note.");
+                }
+            } catch (error) {
+                console.error("Error:", error); // Debugging
+                alert("An error occurred while saving the note.");
+            }
+        }
+
+        // Function to load notes
+        async function loadNotes() {
+            try {
+                const response = await fetch(`/api/team/${teamId}/notes`);
+                console.log("Load notes response:", response); // Debugging
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    console.error("Error loading notes:", errorData); // Debugging
+                    throw new Error(errorData.error || "Failed to load notes.");
+                }
+
+                const data = await response.json();
+                console.log("Loaded notes:", data.notes); // Debugging
+
+                const notesList = document.getElementById('notesList');
+                notesList.innerHTML = ''; // Clear existing notes
+                data.notes.forEach(note => {
+                    const noteElement = document.createElement('p');
+                    noteElement.textContent = note;
+                    notesList.appendChild(noteElement);
+                });
+            } catch (error) {
+                console.error("Error loading notes:", error); // Debugging
+            }
+        }
+
+        // Attach event listener to the form
+        document.getElementById('noteForm').addEventListener('submit', saveNote);
+
+        // Load notes when the page loads
+        loadNotes();
+    </script>
 </body>
 </html>

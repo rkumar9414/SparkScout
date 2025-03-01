@@ -1,11 +1,45 @@
-from flask import Flask, jsonify, render_template
+from flask import Flask, jsonify, render_template, request, g
+import sqlite3
 import requests
 from datetime import datetime
-import time  # For rate limiting
 from backend.api.auth import get_headers, BASE_URL
 
 # Initialize Flask app
 app = Flask(__name__)
+
+# Database configuration
+DATABASE = 'team_notes.db'
+
+# Function to get the database connection
+def get_db():
+    db = getattr(g, '_database', None)
+    if db is None:
+        db = g._database = sqlite3.connect(DATABASE)
+        db.row_factory = sqlite3.Row  # Return rows as dictionaries
+    return db
+
+# Function to initialize the database
+def init_db():
+    with app.app_context():
+        db = get_db()
+        db.execute('''
+            CREATE TABLE IF NOT EXISTS notes (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                team_id INTEGER NOT NULL,
+                note TEXT NOT NULL
+            );
+        ''')
+        db.commit()
+
+# Initialize the database when the app starts
+init_db()
+
+# Close the database connection when the app context ends
+@app.teardown_appcontext
+def close_connection(exception):
+    db = getattr(g, '_database', None)
+    if db is not None:
+        db.close()
 
 # Function to sort events from most recent to oldest
 def sort_events_newest_to_oldest(events):
@@ -87,12 +121,10 @@ def event_teams(event_id):
         response = requests.get(url, headers=get_headers())
         if response.status_code == 200:
             data = response.json()
-            print(f"Page {page} data: {data}")  # Debugging: Log API response
             all_teams.extend(data["data"])
             if not data["meta"]["next_page_url"]:  # Stop if there are no more pages
                 break
             page += 1
-            time.sleep(1)  # Add a 1-second delay to avoid rate limiting
         else:
             print(f"Failed to fetch event teams. Status code: {response.status_code}")
             return jsonify({"error": "Failed to fetch event teams"}), 500
@@ -103,12 +135,48 @@ def event_teams(event_id):
 def team_details(team_id):
     team = get_team_details(team_id)
     skills = get_team_skills(team_id)
-    print(f"Team: {team}")  # Debugging line
-    print(f"Skills: {skills}")  # Debugging line
+    
+    # Fetch notes for the team
+    db = get_db()
+    cursor = db.execute('SELECT note FROM notes WHERE team_id = ?', (team_id,))
+    notes = cursor.fetchall()
+    
     if team and skills:
-        return render_template('team-details.html', team=team, skills=skills)
+        return render_template('team-details.html', team=team, skills=skills, notes=notes)
     else:
-        return render_template('team-details.html', team=team, skills=None)
+        return render_template('team-details.html', team=team, skills=None, notes=notes)
+
+# Route to save a note for a team
+@app.route('/api/team/<int:team_id>/notes', methods=['POST'])
+def save_note(team_id):
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "No data provided"}), 400
+
+        note = data.get('note')
+        if not note:
+            return jsonify({"error": "Note is required"}), 400
+
+        db = get_db()
+        db.execute('INSERT INTO notes (team_id, note) VALUES (?, ?)', (team_id, note))
+        db.commit()
+        return jsonify({"message": "Note saved successfully"}), 201
+    except Exception as e:
+        print(f"Error saving note: {e}")  # Log the error
+        return jsonify({"error": "An error occurred while saving the note"}), 500
+
+# Route to get all notes for a team
+@app.route('/api/team/<int:team_id>/notes', methods=['GET'])
+def get_notes(team_id):
+    try:
+        db = get_db()
+        cursor = db.execute('SELECT note FROM notes WHERE team_id = ?', (team_id,))
+        notes = cursor.fetchall()
+        return jsonify({"notes": [note["note"] for note in notes]}), 200
+    except Exception as e:
+        print(f"Error fetching notes: {e}")  # Log the error
+        return jsonify({"error": "An error occurred while fetching notes"}), 500
 
 # Run the Flask app
 if __name__ == '__main__':
