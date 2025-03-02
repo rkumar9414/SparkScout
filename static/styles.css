@@ -196,3 +196,13 @@ textarea {
     margin-bottom: 10px;
     border-radius: 4px;
 }
+
+/* Delete Button */
+.delete-note-btn {
+    background-color: #dc3545; /* Red color for delete button */
+    margin-left: 10px;
+}
+
+.delete-note-btn:hover {
+    background-color: #c82333; /* Darker red on hover */
+}

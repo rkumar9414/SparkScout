@@ -139,7 +139,7 @@ def team_details(team_id):
     
     # Fetch notes for the team
     db = get_db()
-    cursor = db.execute('SELECT note_type, note FROM notes WHERE team_id = ?', (team_id,))
+    cursor = db.execute('SELECT id, note_type, note FROM notes WHERE team_id = ?', (team_id,))
     notes = cursor.fetchall()
     
     # Organize notes by type
@@ -151,7 +151,7 @@ def team_details(team_id):
     }
     for note in notes:
         if note["note_type"] in notes_by_type:
-            notes_by_type[note["note_type"]].append(note["note"])
+            notes_by_type[note["note_type"]].append({"id": note["id"], "note": note["note"]})
     
     if team and skills:
         return render_template('team-details.html', team=team, skills=skills, notes_by_type=notes_by_type)
@@ -184,12 +184,24 @@ def save_note(team_id):
 def get_notes(team_id):
     try:
         db = get_db()
-        cursor = db.execute('SELECT note_type, note FROM notes WHERE team_id = ?', (team_id,))
+        cursor = db.execute('SELECT id, note_type, note FROM notes WHERE team_id = ?', (team_id,))
         notes = cursor.fetchall()
-        return jsonify({"notes": [{"note_type": note["note_type"], "note": note["note"]} for note in notes]}), 200
+        return jsonify({"notes": [{"id": note["id"], "note_type": note["note_type"], "note": note["note"]} for note in notes]}), 200
     except Exception as e:
         print(f"Error fetching notes: {e}")  # Log the error
         return jsonify({"error": "An error occurred while fetching notes"}), 500
+
+# Route to delete a note
+@app.route('/api/notes/<int:note_id>', methods=['DELETE'])
+def delete_note(note_id):
+    try:
+        db = get_db()
+        db.execute('DELETE FROM notes WHERE id = ?', (note_id,))
+        db.commit()
+        return jsonify({"message": "Note deleted successfully"}), 200
+    except Exception as e:
+        print(f"Error deleting note: {e}")  # Log the error
+        return jsonify({"error": "An error occurred while deleting the note"}), 500
 
 # Run the Flask app
 if __name__ == '__main__':

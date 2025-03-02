@@ -79,7 +79,10 @@
             </form>
             <div id="autonomousNotesList" class="notes-list">
                 {% for note in notes_by_type["Autonomous Details"] %}
-                    <p>{{ note }}</p>
+                    <div class="note-item" data-note-id="{{ note.id }}">
+                        <p>{{ note.note }}</p>
+                        <button class="delete-note-btn" data-note-id="{{ note.id }}" data-note-type="Autonomous Details">Delete</button>
+                    </div>
                 {% endfor %}
             </div>
         </div>
@@ -93,7 +96,10 @@
             </form>
             <div id="endgameNotesList" class="notes-list">
                 {% for note in notes_by_type["Endgame Details"] %}
-                    <p>{{ note }}</p>
+                    <div class="note-item" data-note-id="{{ note.id }}">
+                        <p>{{ note.note }}</p>
+                        <button class="delete-note-btn" data-note-id="{{ note.id }}" data-note-type="Endgame Details">Delete</button>
+                    </div>
                 {% endfor %}
             </div>
         </div>
@@ -107,7 +113,10 @@
             </form>
             <div id="driverNotesList" class="notes-list">
                 {% for note in notes_by_type["Driver Details"] %}
-                    <p>{{ note }}</p>
+                    <div class="note-item" data-note-id="{{ note.id }}">
+                        <p>{{ note.note }}</p>
+                        <button class="delete-note-btn" data-note-id="{{ note.id }}" data-note-type="Driver Details">Delete</button>
+                    </div>
                 {% endfor %}
             </div>
         </div>
@@ -121,7 +130,10 @@
             </form>
             <div id="miscNotesList" class="notes-list">
                 {% for note in notes_by_type["Misc"] %}
-                    <p>{{ note }}</p>
+                    <div class="note-item" data-note-id="{{ note.id }}">
+                        <p>{{ note.note }}</p>
+                        <button class="delete-note-btn" data-note-id="{{ note.id }}" data-note-type="Misc">Delete</button>
+                    </div>
                 {% endfor %}
             </div>
         </div>
@@ -190,8 +202,13 @@
                 data.notes
                     .filter(note => note.note_type === noteType)
                     .forEach(note => {
-                        const noteElement = document.createElement('p');
-                        noteElement.textContent = note.note;
+                        const noteElement = document.createElement('div');
+                        noteElement.className = 'note-item';
+                        noteElement.setAttribute('data-note-id', note.id);
+                        noteElement.innerHTML = `
+                            <p>${note.note}</p>
+                            <button class="delete-note-btn" onclick="handleDeleteNote(${note.id}, '${noteType}')">Delete</button>
+                        `;
                         notesList.appendChild(noteElement);
                     });
             } catch (error) {
@@ -199,7 +216,40 @@
             }
         }
 
+        async function handleDeleteNote(noteId, noteType) {
+            console.log("Deleting note with ID:", noteId); // Debugging line
+            const confirmDelete = confirm("Are you sure you want to delete this note?");
+            if (confirmDelete) {
+                try {
+                    const response = await fetch(`/api/notes/${noteId}`, {
+                        method: 'DELETE',
+                    });
+
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.error || "Failed to delete note.");
+                    }
+
+                    const data = await response.json();
+                    if (data.message) {
+                        alert("Note deleted successfully!");
+                        loadNotes(noteType); // Refresh the notes list for the specific type
+                    }
+                } catch (error) {
+                    console.error("Error:", error);
+                    alert("An error occurred while deleting the note.");
+                }
+            }
+        }
+
         // Attach event listeners to the forms
+        document.querySelectorAll('.delete-note-btn').forEach(button => {
+            button.addEventListener('click', (event) => {
+                const noteId = event.target.getAttribute('data-note-id');
+                const noteType = event.target.getAttribute('data-note-type');
+                handleDeleteNote(noteId, noteType);
+            });
+        });
         document.getElementById('autonomousForm').addEventListener('submit', (event) => saveNote(event, "Autonomous Details"));
         document.getElementById('endgameForm').addEventListener('submit', (event) => saveNote(event, "Endgame Details"));
         document.getElementById('driverForm').addEventListener('submit', (event) => saveNote(event, "Driver Details"));
