@@ -19,24 +19,19 @@
 
         <h3>Skills Challenge</h3>
         {% if skills and skills.data %}
-            {# Extract programming and driver skills from the skills data #}
             {% set programming_skills = skills.data | selectattr("type", "equalto", "programming") | list %}
             {% set driver_skills = skills.data | selectattr("type", "equalto", "driver") | list %}
 
-            {# Debugging: Log skills data to the console #}
             <script>
-                // Safely convert Python data to JSON and assign to JavaScript variables
                 const skillsData = JSON.parse('{{ skills.data | tojson | safe }}');
                 const programmingSkills = JSON.parse('{{ programming_skills | tojson | safe }}');
                 const driverSkills = JSON.parse('{{ driver_skills | tojson | safe }}');
-            
-                // Log the data to the console
+
                 console.log("Skills Data:", skillsData);
                 console.log("Programming Skills:", programmingSkills);
                 console.log("Driver Skills:", driverSkills);
             </script>
 
-            {# Display programming skills score #}
             <p><strong>Programming Skills:</strong> 
                 {% if programming_skills %}
                     {{ programming_skills[0].score }}
@@ -45,7 +40,6 @@
                 {% endif %}
             </p>
 
-            {# Display driver skills score #}
             <p><strong>Driver Skills:</strong> 
                 {% if driver_skills %}
                     {{ driver_skills[0].score }}
@@ -54,7 +48,6 @@
                 {% endif %}
             </p>
 
-            {# Display combined skills score #}
             <p><strong>Combined Skills:</strong> 
                 {% if programming_skills and driver_skills %}
                     {{ programming_skills[0].score + driver_skills[0].score }}
@@ -76,36 +69,85 @@
 
         <!-- Notes Section -->
         <h3>Notes</h3>
-        <form id="noteForm">
-            <textarea id="noteInput" placeholder="Add a note about this team..." required></textarea>
-            <button type="submit">Save Note</button>
-        </form>
-        <div id="notesList">
-            {% if notes %}
-                {% for note in notes %}
-                    <p>{{ note.note }}</p>
+
+        <!-- Autonomous Details -->
+        <div class="note-box">
+            <h4>Autonomous Details</h4>
+            <form id="autonomousForm" class="note-form">
+                <textarea id="autonomousInput" placeholder="Add notes about autonomous..." required></textarea>
+                <button type="submit">Save Note</button>
+            </form>
+            <div id="autonomousNotesList" class="notes-list">
+                {% for note in notes_by_type["Autonomous Details"] %}
+                    <p>{{ note }}</p>
                 {% endfor %}
-            {% else %}
-                <p>No notes yet.</p>
-            {% endif %}
+            </div>
+        </div>
+
+        <!-- Endgame Details -->
+        <div class="note-box">
+            <h4>Endgame Details</h4>
+            <form id="endgameForm" class="note-form">
+                <textarea id="endgameInput" placeholder="Add notes about endgame..." required></textarea>
+                <button type="submit">Save Note</button>
+            </form>
+            <div id="endgameNotesList" class="notes-list">
+                {% for note in notes_by_type["Endgame Details"] %}
+                    <p>{{ note }}</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Driver Details -->
+        <div class="note-box">
+            <h4>Driver Details</h4>
+            <form id="driverForm" class="note-form">
+                <textarea id="driverInput" placeholder="Add notes about drivers..." required></textarea>
+                <button type="submit">Save Note</button>
+            </form>
+            <div id="driverNotesList" class="notes-list">
+                {% for note in notes_by_type["Driver Details"] %}
+                    <p>{{ note }}</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Misc -->
+        <div class="note-box">
+            <h4>Misc</h4>
+            <form id="miscForm" class="note-form">
+                <textarea id="miscInput" placeholder="Add miscellaneous notes..." required></textarea>
+                <button type="submit">Save Note</button>
+            </form>
+            <div id="miscNotesList" class="notes-list">
+                {% for note in notes_by_type["Misc"] %}
+                    <p>{{ note }}</p>
+                {% endfor %}
+            </div>
         </div>
     </div>
 
     <script>
-        // Extract teamId from the URL path (e.g., /team/123)
         const teamId = window.location.pathname.split('/').pop();
 
-        // Function to save a note
-        async function saveNote(event) {
+        async function saveNote(event, noteType) {
             event.preventDefault(); // Prevent form submission from reloading the page
 
-            const note = document.getElementById('noteInput').value;
+            // Map note types to their corresponding input IDs
+            const inputIdMap = {
+                "Autonomous Details": "autonomousInput",
+                "Endgame Details": "endgameInput",
+                "Driver Details": "driverInput",
+                "Misc": "miscInput",
+            };
+
+            const inputId = inputIdMap[noteType];
+            const note = document.getElementById(inputId).value;
+
             if (!note) {
                 alert("Please enter a note.");
                 return;
             }
-
-            console.log("Saving note:", note); // Debugging
 
             try {
                 const response = await fetch(`/api/team/${teamId}/notes`, {
@@ -113,74 +155,61 @@
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ note }),
+                    body: JSON.stringify({ note_type: noteType, note }),
                 });
-
-                console.log("Response status:", response.status); // Debugging
-                console.log("Response OK:", response.ok); // Debugging
 
                 if (!response.ok) {
                     const errorData = await response.json();
-                    console.error("Error response:", errorData); // Debugging
                     throw new Error(errorData.error || "Failed to save note.");
                 }
 
                 const data = await response.json();
-                console.log("Response data:", data); // Debugging
-
                 if (data.message) {
-                    // Show confirmation message
-                    const confirmationMessage = document.createElement('p');
-                    confirmationMessage.textContent = "Note saved successfully!";
-                    confirmationMessage.style.color = "green";
-                    document.getElementById('notesList').prepend(confirmationMessage);
-
-                    // Clear the input
-                    document.getElementById('noteInput').value = '';
-
-                    // Refresh the notes list
-                    loadNotes();
-                } else {
-                    alert("Failed to save note.");
+                    alert("Note saved successfully!");
+                    document.getElementById(inputId).value = ''; // Clear the input
+                    loadNotes(noteType); // Refresh the notes list
                 }
             } catch (error) {
-                console.error("Error:", error); // Debugging
+                console.error("Error:", error);
                 alert("An error occurred while saving the note.");
             }
         }
 
-        // Function to load notes
-        async function loadNotes() {
+        async function loadNotes(noteType) {
             try {
                 const response = await fetch(`/api/team/${teamId}/notes`);
-                console.log("Load notes response:", response); // Debugging
-
                 if (!response.ok) {
-                    const errorData = await response.json();
-                    console.error("Error loading notes:", errorData); // Debugging
-                    throw new Error(errorData.error || "Failed to load notes.");
+                    throw new Error("Failed to load notes.");
                 }
 
                 const data = await response.json();
-                console.log("Loaded notes:", data.notes); // Debugging
-
-                const notesList = document.getElementById('notesList');
+                const notesList = document.getElementById(`${noteType.toLowerCase().replace(/ /g, '')}NotesList`);
                 notesList.innerHTML = ''; // Clear existing notes
-                data.notes.forEach(note => {
-                    const noteElement = document.createElement('p');
-                    noteElement.textContent = note;
-                    notesList.appendChild(noteElement);
-                });
+
+                // Filter notes by type and display them
+                data.notes
+                    .filter(note => note.note_type === noteType)
+                    .forEach(note => {
+                        const noteElement = document.createElement('p');
+                        noteElement.textContent = note.note;
+                        notesList.appendChild(noteElement);
+                    });
             } catch (error) {
-                console.error("Error loading notes:", error); // Debugging
+                console.error("Error loading notes:", error);
             }
         }
 
-        // Attach event listener to the form
-        document.getElementById('noteForm').addEventListener('submit', saveNote);
+        // Attach event listeners to the forms
+        document.getElementById('autonomousForm').addEventListener('submit', (event) => saveNote(event, "Autonomous Details"));
+        document.getElementById('endgameForm').addEventListener('submit', (event) => saveNote(event, "Endgame Details"));
+        document.getElementById('driverForm').addEventListener('submit', (event) => saveNote(event, "Driver Details"));
+        document.getElementById('miscForm').addEventListener('submit', (event) => saveNote(event, "Misc"));
 
         // Load notes when the page loads
-        loadNotes();
+        loadNotes("Autonomous Details");
+        loadNotes("Endgame Details");
+        loadNotes("Driver Details");
+        loadNotes("Misc");
     </script>
 </body>
 </html>

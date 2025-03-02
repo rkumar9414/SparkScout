@@ -26,6 +26,7 @@ def init_db():
             CREATE TABLE IF NOT EXISTS notes (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 team_id INTEGER NOT NULL,
+                note_type TEXT NOT NULL,  -- New column for note type
                 note TEXT NOT NULL
             );
         ''')
@@ -138,13 +139,24 @@ def team_details(team_id):
     
     # Fetch notes for the team
     db = get_db()
-    cursor = db.execute('SELECT note FROM notes WHERE team_id = ?', (team_id,))
+    cursor = db.execute('SELECT note_type, note FROM notes WHERE team_id = ?', (team_id,))
     notes = cursor.fetchall()
     
+    # Organize notes by type
+    notes_by_type = {
+        "Autonomous Details": [],
+        "Endgame Details": [],
+        "Driver Details": [],
+        "Misc": [],
+    }
+    for note in notes:
+        if note["note_type"] in notes_by_type:
+            notes_by_type[note["note_type"]].append(note["note"])
+    
     if team and skills:
-        return render_template('team-details.html', team=team, skills=skills, notes=notes)
+        return render_template('team-details.html', team=team, skills=skills, notes_by_type=notes_by_type)
     else:
-        return render_template('team-details.html', team=team, skills=None, notes=notes)
+        return render_template('team-details.html', team=team, skills=None, notes_by_type=notes_by_type)
 
 # Route to save a note for a team
 @app.route('/api/team/<int:team_id>/notes', methods=['POST'])
@@ -154,12 +166,13 @@ def save_note(team_id):
         if not data:
             return jsonify({"error": "No data provided"}), 400
 
+        note_type = data.get('note_type')
         note = data.get('note')
-        if not note:
-            return jsonify({"error": "Note is required"}), 400
+        if not note_type or not note:
+            return jsonify({"error": "Note type and note are required"}), 400
 
         db = get_db()
-        db.execute('INSERT INTO notes (team_id, note) VALUES (?, ?)', (team_id, note))
+        db.execute('INSERT INTO notes (team_id, note_type, note) VALUES (?, ?, ?)', (team_id, note_type, note))
         db.commit()
         return jsonify({"message": "Note saved successfully"}), 201
     except Exception as e:
@@ -171,9 +184,9 @@ def save_note(team_id):
 def get_notes(team_id):
     try:
         db = get_db()
-        cursor = db.execute('SELECT note FROM notes WHERE team_id = ?', (team_id,))
+        cursor = db.execute('SELECT note_type, note FROM notes WHERE team_id = ?', (team_id,))
         notes = cursor.fetchall()
-        return jsonify({"notes": [note["note"] for note in notes]}), 200
+        return jsonify({"notes": [{"note_type": note["note_type"], "note": note["note"]} for note in notes]}), 200
     except Exception as e:
         print(f"Error fetching notes: {e}")  # Log the error
         return jsonify({"error": "An error occurred while fetching notes"}), 500
