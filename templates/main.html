@@ -3,13 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SparkScout - VEX Competitions</title>
+    <title>SparkScout - Powered by Robot Events</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
     <h1>
-        <a href="/" class="header-link">SparkScout - VEX Competitions</a>
+        <a href="/" class="header-link">SparkScout - Powered by Robot Events</a>
     </h1>
+    <p>Enter the competition name and location:</p>
+    <div class="search-container">
+        <input type="text" id="searchInput" placeholder="e.g., VEX High Stakes NJ States">
+        <button onclick="performSearch()">Search</button>
+    </div>
 
     <!-- Competition List -->
     <div class="competition-list">
