@@ -75,18 +75,18 @@ def get_team_events(team_id):
             data = response.json()
             filtered_events = [
                 event for event in data["data"]
-                if "2024-2025" in event.get("season", {}).get("name", "")
+                if event.get("season", {}).get("name") == "2024-2025"
             ]
             all_events.extend(filtered_events)
             
-            if not data["meta"]["next_page_url"] or page >= 2:
+            if not data["meta"]["next_page_url"]:
                 break
             page += 1
 
-        return sorted(all_events, key=lambda x: x["start"], reverse=True)
+        return {"data": sort_events_newest_to_oldest(all_events)}
     except Exception as e:
         print(f"Error getting team events: {str(e)}")
-        return []
+        return {"data": []}
 
 def get_team_details(team_id):
     try:
@@ -110,11 +110,11 @@ def get_team_skills(team_id):
             data = response.json()
             filtered_skills = [
                 skill for skill in data.get("data", [])
-                if "2024-2025" in skill.get("season", {}).get("name", "")
+                if skill.get("season", {}).get("name") == "2024-2025"
             ]
             all_skills.extend(filtered_skills)
             
-            if not data["meta"]["next_page_url"] or page >= 2:
+            if not data["meta"]["next_page_url"]:
                 break
             page += 1
             
@@ -130,13 +130,16 @@ def get_team_skills(team_id):
 def index():
     return render_template('main.html')
 
-@app.route('/api/team-events')
-def api_team_events():
-    team_number = "750S"
-    team_id = get_team_id(team_number)
-    if not team_id:
-        return jsonify({"error": "Team 750S not found"}), 404
-    return jsonify({"data": get_team_events(team_id)})
+@app.route('/api/team-events/<team_number>')
+def api_team_events(team_number):
+    try:
+        team_id = get_team_id(team_number)
+        if not team_id:
+            return jsonify({"error": "Team not found", "data": []}), 404
+        events = get_team_events(team_id)
+        return jsonify(events)
+    except Exception as e:
+        return jsonify({"error": str(e), "data": []}), 500
 
 @app.route('/team/<team_id>')
 def team_details(team_id):
@@ -221,7 +224,7 @@ def event_teams(event_id):
             data = response.json()
             all_teams.extend(data.get("data", []))
             
-            if not data.get("meta", {}).get("next_page_url") or page >= 3:
+            if not data.get("meta", {}).get("next_page_url"):
                 break
             page += 1
 
