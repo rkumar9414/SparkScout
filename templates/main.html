@@ -3,18 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SparkScout - Powered by Robot Events</title>
+    <h1 style="display: flex; align-items: center; justify-content: center; gap: 15px;">
+        <img src="{{ url_for('static', filename='favicon.ico') }}" alt="Logo" style="width: 40px; height: 40px; object-fit: contain;">
+        <a href="/" class="header-link">SparkScout - Powered by Robot Events</a>
+        <img src="{{ url_for('static', filename='favicon.ico') }}" alt="Logo" style="width: 40px; height: 40px; object-fit: contain;">
+    </h1>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
 </head>
 <body>
-    <h1>
-        <a href="/" class="header-link">SparkScout - Powered by Robot Events</a>
-    </h1>
-    <p>Enter the competition name and location:</p>
-    <div class="search-container">
-        <input type="text" id="searchInput" placeholder="e.g., VEX High Stakes NJ States">
-        <button onclick="performSearch()">Search</button>
-    </div>
+   
 
     <!-- Competition List -->
     <div class="competition-list">
@@ -77,7 +75,7 @@
             }
         }
 
-        // Example: Display events for team 750S
+        // Display events for team 750S
         displayTeamEvents("750S");
     </script>
 </body>
