@@ -10,15 +10,23 @@ app = Flask(__name__)
 # Database configuration
 DATABASE = 'team_notes.db'
 
-# Function to get the database connection
+# --------------------------------------
+# Root route (MUST BE AT THE TOP)
+# --------------------------------------
+@app.route('/')
+def index():
+    return render_template('main.html')
+
+# --------------------------------------
+# Database functions
+# --------------------------------------
 def get_db():
     db = getattr(g, '_database', None)
     if db is None:
         db = g._database = sqlite3.connect(DATABASE)
-        db.row_factory = sqlite3.Row  # Return rows as dictionaries
+        db.row_factory = sqlite3.Row
     return db
 
-# Function to initialize the database
 def init_db():
     with app.app_context():
         db = get_db()
@@ -26,27 +34,26 @@ def init_db():
             CREATE TABLE IF NOT EXISTS notes (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 team_id INTEGER NOT NULL,
-                note_type TEXT NOT NULL,  -- New column for note type
+                note_type TEXT NOT NULL,
                 note TEXT NOT NULL
             );
         ''')
         db.commit()
 
-# Initialize the database when the app starts
 init_db()
 
-# Close the database connection when the app context ends
 @app.teardown_appcontext
 def close_connection(exception):
     db = getattr(g, '_database', None)
     if db is not None:
         db.close()
 
-# Function to sort events from most recent to oldest
+# --------------------------------------
+# Team/event functions
+# --------------------------------------
 def sort_events_newest_to_oldest(events):
     return sorted(events, key=lambda x: datetime.fromisoformat(x["start"]), reverse=True)
 
-# Function to Get Team ID
 def get_team_id(team_number):
     url = f"{BASE_URL}/teams"
     params = {"number[]": team_number}
@@ -63,7 +70,6 @@ def get_team_id(team_number):
         print(f"Error: {response.status_code}")
         return None
 
-# Function to Fetch Team Events (with pagination and sorting)
 def get_team_events(team_id):
     all_events = []
     page = 1
@@ -73,7 +79,7 @@ def get_team_events(team_id):
         if response.status_code == 200:
             data = response.json()
             all_events.extend(data["data"])
-            if not data["meta"]["next_page_url"]:  # Stop if there are no more pages
+            if not data["meta"]["next_page_url"]:
                 break
             page += 1
         else:
@@ -81,7 +87,6 @@ def get_team_events(team_id):
             return None
     return {"data": sort_events_newest_to_oldest(all_events)}
 
-# Function to Fetch Team Details
 def get_team_details(team_id):
     url = f"{BASE_URL}/teams/{team_id}"
     response = requests.get(url, headers=get_headers())
@@ -89,30 +94,35 @@ def get_team_details(team_id):
         return response.json()
     return None
 
-# Function to Fetch Team Skills
 def get_team_skills(team_id):
-    url = f"{BASE_URL}/teams/{team_id}/skills"
-    response = requests.get(url, headers=get_headers())
-    if response.status_code == 200:
-        return response.json()
-    return None
+    all_skills = []
+    page = 1
+    while True:
+        url = f"{BASE_URL}/teams/{team_id}/skills?page={page}"
+        response = requests.get(url, headers=get_headers())
+        
+        print(f"\n[DEBUG] Fetching skills page {page}")
+        print(f"[DEBUG] Response status: {response.status_code}")
+        
+        if response.status_code == 200:
+            data = response.json()
+            filtered_skills = [
+                skill for skill in data.get("data", [])
+                if "2024-2025" in skill.get("season", {}).get("name", "")
+            ]
+            all_skills.extend(filtered_skills)
+            if not data["meta"]["next_page_url"]:
+                break
+            page += 1
+        else:
+            print(f"[ERROR] Failed to fetch skills: {response.status_code}")
+            return None
+    print(f"\n[DEBUG] Total skills for 2024-2025: {len(all_skills)}")
+    return {"data": all_skills}
 
-# Serve the main page
-@app.route('/')
-def index():
-    return render_template('main.html')
-
-# API endpoint to get team events
-@app.route('/api/team-events/<team_number>')
-def team_events(team_number):
-    team_id = get_team_id(team_number)
-    if team_id:
-        events = get_team_events(team_id)
-        if events:
-            return jsonify(events)
-    return jsonify({"error": "Failed to fetch team events"}), 500
-
-# New endpoint to fetch teams for an event
+# --------------------------------------
+# Other routes
+# --------------------------------------
 @app.route('/api/event-teams/<event_id>')
 def event_teams(event_id):
     all_teams = []
@@ -123,7 +133,7 @@ def event_teams(event_id):
         if response.status_code == 200:
             data = response.json()
             all_teams.extend(data["data"])
-            if not data["meta"]["next_page_url"]:  # Stop if there are no more pages
+            if not data["meta"]["next_page_url"]:
                 break
             page += 1
         else:
@@ -131,18 +141,15 @@ def event_teams(event_id):
             return jsonify({"error": "Failed to fetch event teams"}), 500
     return jsonify({"data": all_teams})
 
-# New route to display team details
 @app.route('/team/<team_id>')
 def team_details(team_id):
     team = get_team_details(team_id)
     skills = get_team_skills(team_id)
     
-    # Fetch notes for the team
     db = get_db()
     cursor = db.execute('SELECT id, note_type, note FROM notes WHERE team_id = ?', (team_id,))
     notes = cursor.fetchall()
     
-    # Organize notes by type
     notes_by_type = {
         "Autonomous Details": [],
         "Endgame Details": [],
@@ -153,12 +160,11 @@ def team_details(team_id):
         if note["note_type"] in notes_by_type:
             notes_by_type[note["note_type"]].append({"id": note["id"], "note": note["note"]})
     
-    if team and skills:
-        return render_template('team-details.html', team=team, skills=skills, notes_by_type=notes_by_type)
-    else:
-        return render_template('team-details.html', team=team, skills=None, notes_by_type=notes_by_type)
+    return render_template('team-details.html', 
+                         team=team, 
+                         skills=skills, 
+                         notes_by_type=notes_by_type)
 
-# Route to save a note for a team
 @app.route('/api/team/<int:team_id>/notes', methods=['POST'])
 def save_note(team_id):
     try:
@@ -172,26 +178,25 @@ def save_note(team_id):
             return jsonify({"error": "Note type and note are required"}), 400
 
         db = get_db()
-        db.execute('INSERT INTO notes (team_id, note_type, note) VALUES (?, ?, ?)', (team_id, note_type, note))
+        db.execute('INSERT INTO notes (team_id, note_type, note) VALUES (?, ?, ?)', 
+                  (team_id, note_type, note))
         db.commit()
         return jsonify({"message": "Note saved successfully"}), 201
     except Exception as e:
-        print(f"Error saving note: {e}")  # Log the error
+        print(f"Error saving note: {e}")
         return jsonify({"error": "An error occurred while saving the note"}), 500
 
-# Route to get all notes for a team
 @app.route('/api/team/<int:team_id>/notes', methods=['GET'])
 def get_notes(team_id):
     try:
         db = get_db()
         cursor = db.execute('SELECT id, note_type, note FROM notes WHERE team_id = ?', (team_id,))
         notes = cursor.fetchall()
-        return jsonify({"notes": [{"id": note["id"], "note_type": note["note_type"], "note": note["note"]} for note in notes]}), 200
+        return jsonify({"notes": [dict(note) for note in notes]}), 200
     except Exception as e:
-        print(f"Error fetching notes: {e}")  # Log the error
+        print(f"Error fetching notes: {e}")
         return jsonify({"error": "An error occurred while fetching notes"}), 500
 
-# Route to delete a note
 @app.route('/api/notes/<int:note_id>', methods=['DELETE'])
 def delete_note(note_id):
     try:
@@ -200,9 +205,20 @@ def delete_note(note_id):
         db.commit()
         return jsonify({"message": "Note deleted successfully"}), 200
     except Exception as e:
-        print(f"Error deleting note: {e}")  # Log the error
+        print(f"Error deleting note: {e}")
         return jsonify({"error": "An error occurred while deleting the note"}), 500
 
-# Run the Flask app
+@app.route('/api/team-events/<team_number>')
+def team_events(team_number):
+    team_id = get_team_id(team_number)
+    if team_id:
+        events = get_team_events(team_id)
+        if events:
+            return jsonify(events)
+    return jsonify({"error": "Failed to fetch team events"}), 500
+
+# --------------------------------------
+# Run the app
+# --------------------------------------
 if __name__ == '__main__':
     app.run(debug=True)

@@ -17,40 +17,36 @@
         <p><strong>Grade:</strong> {{ team.grade }}</p>
         <p><strong>Location:</strong> {{ team.location.city }}, {{ team.location.region }}, {{ team.location.country }}</p>
 
-        <h3>Skills Challenge</h3>
+        <!-- Skills Section -->
+        <h3>Skills Challenge (2024-2025 Season)</h3>
         {% if skills and skills.data %}
-            {% set programming_skills = skills.data | selectattr("type", "equalto", "programming") | list %}
-            {% set driver_skills = skills.data | selectattr("type", "equalto", "driver") | list %}
-
             <script>
-                const skillsData = JSON.parse('{{ skills.data | tojson | safe }}');
-                const programmingSkills = JSON.parse('{{ programming_skills | tojson | safe }}');
-                const driverSkills = JSON.parse('{{ driver_skills | tojson | safe }}');
-
-                console.log("Skills Data:", skillsData);
-                console.log("Programming Skills:", programmingSkills);
-                console.log("Driver Skills:", driverSkills);
+                console.log("[DEBUG] Skills data:", JSON.parse('{{ skills.data | tojson | safe }}'));
             </script>
 
-            <p><strong>Programming Skills:</strong> 
-                {% if programming_skills %}
-                    {{ programming_skills[0].score }}
-                {% else %}
-                    N/A
+            {# Use namespace for mutable variables #}
+            {% set ns = namespace(programming_skills=[], driver_skills=[]) %}
+            
+            {% for skill in skills.data %}
+                {% if skill.type == "programming" %}
+                    {% set ns.programming_skills = ns.programming_skills + [skill] %}
+                {% elif skill.type == "driver" %}
+                    {% set ns.driver_skills = ns.driver_skills + [skill] %}
                 {% endif %}
-            </p>
+            {% endfor %}
 
-            <p><strong>Driver Skills:</strong> 
-                {% if driver_skills %}
-                    {{ driver_skills[0].score }}
-                {% else %}
-                    N/A
-                {% endif %}
-            </p>
+            {% set highest_programming = ns.programming_skills | sort(attribute="score", reverse=true) | first if ns.programming_skills else None %}
+            {% set highest_driver = ns.driver_skills | sort(attribute="score", reverse=true) | first if ns.driver_skills else None %}
 
+            <p><strong>Highest Programming Skills:</strong> 
+                {{ highest_programming.score if highest_programming else "N/A" }}
+            </p>
+            <p><strong>Highest Driver Skills:</strong> 
+                {{ highest_driver.score if highest_driver else "N/A" }}
+            </p>
             <p><strong>Combined Skills:</strong> 
-                {% if programming_skills and driver_skills %}
-                    {{ programming_skills[0].score + driver_skills[0].score }}
+                {% if highest_programming and highest_driver %}
+                    {{ highest_programming.score + highest_driver.score }}
                 {% else %}
                     N/A
                 {% endif %}
@@ -59,18 +55,8 @@
             <p>No skills data available for this team.</p>
         {% endif %}
 
-        <h3>Performance Metrics</h3>
-        <p><strong>OPR:</strong> N/A</p>
-        <p><strong>DPR:</strong> N/A</p>
-        <p><strong>CCWM:</strong> N/A</p>
-        <p><strong>WP:</strong> N/A</p>
-        <p><strong>AP:</strong> N/A</p>
-        <p><strong>SP:</strong> N/A</p>
-
-        <!-- Notes Section -->
+        <!-- Notes Section (FULLY RESTORED) -->
         <h3>Notes</h3>
-
-        <!-- Autonomous Details -->
         <div class="note-box">
             <h4>Autonomous Details</h4>
             <form id="autonomousForm" class="note-form">
@@ -87,7 +73,6 @@
             </div>
         </div>
 
-        <!-- Endgame Details -->
         <div class="note-box">
             <h4>Endgame Details</h4>
             <form id="endgameForm" class="note-form">
@@ -104,7 +89,6 @@
             </div>
         </div>
 
-        <!-- Driver Details -->
         <div class="note-box">
             <h4>Driver Details</h4>
             <form id="driverForm" class="note-form">
@@ -121,7 +105,6 @@
             </div>
         </div>
 
-        <!-- Misc -->
         <div class="note-box">
             <h4>Misc</h4>
             <form id="miscForm" class="note-form">
@@ -139,20 +122,27 @@
         </div>
     </div>
 
+    <!-- JavaScript for Notes -->
     <script>
+        // Event delegation for delete buttons
+        document.body.addEventListener('click', function(event) {
+            if (event.target.classList.contains('delete-note-btn')) {
+                const noteId = event.target.getAttribute('data-note-id');
+                const noteType = event.target.getAttribute('data-note-type');
+                handleDeleteNote(noteId, noteType);
+            }
+        });
+
         const teamId = window.location.pathname.split('/').pop();
 
         async function saveNote(event, noteType) {
-            event.preventDefault(); // Prevent form submission from reloading the page
-
-            // Map note types to their corresponding input IDs
+            event.preventDefault();
             const inputIdMap = {
                 "Autonomous Details": "autonomousInput",
                 "Endgame Details": "endgameInput",
                 "Driver Details": "driverInput",
                 "Misc": "miscInput",
             };
-
             const inputId = inputIdMap[noteType];
             const note = document.getElementById(inputId).value;
 
@@ -164,23 +154,14 @@
             try {
                 const response = await fetch(`/api/team/${teamId}/notes`, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ note_type: noteType, note }),
                 });
 
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.error || "Failed to save note.");
-                }
-
-                const data = await response.json();
-                if (data.message) {
-                    alert("Note saved successfully!");
-                    document.getElementById(inputId).value = ''; // Clear the input
-                    loadNotes(noteType); // Refresh the notes list
-                }
+                if (!response.ok) throw new Error("Failed to save note.");
+                alert("Note saved successfully!");
+                document.getElementById(inputId).value = '';
+                loadNotes(noteType);
             } catch (error) {
                 console.error("Error:", error);
                 alert("An error occurred while saving the note.");
@@ -190,15 +171,10 @@
         async function loadNotes(noteType) {
             try {
                 const response = await fetch(`/api/team/${teamId}/notes`);
-                if (!response.ok) {
-                    throw new Error("Failed to load notes.");
-                }
-
+                if (!response.ok) throw new Error("Failed to load notes.");
                 const data = await response.json();
                 const notesList = document.getElementById(`${noteType.toLowerCase().replace(/ /g, '')}NotesList`);
-                notesList.innerHTML = ''; // Clear existing notes
-
-                // Filter notes by type and display them
+                notesList.innerHTML = '';
                 data.notes
                     .filter(note => note.note_type === noteType)
                     .forEach(note => {
@@ -207,7 +183,7 @@
                         noteElement.setAttribute('data-note-id', note.id);
                         noteElement.innerHTML = `
                             <p>${note.note}</p>
-                            <button class="delete-note-btn" onclick="handleDeleteNote(${note.id}, '${noteType}')">Delete</button>
+                            <button class="delete-note-btn" data-note-id="${note.id}" data-note-type="${noteType}">Delete</button>
                         `;
                         notesList.appendChild(noteElement);
                     });
@@ -217,24 +193,13 @@
         }
 
         async function handleDeleteNote(noteId, noteType) {
-            console.log("Deleting note with ID:", noteId); // Debugging line
             const confirmDelete = confirm("Are you sure you want to delete this note?");
             if (confirmDelete) {
                 try {
-                    const response = await fetch(`/api/notes/${noteId}`, {
-                        method: 'DELETE',
-                    });
-
-                    if (!response.ok) {
-                        const errorData = await response.json();
-                        throw new Error(errorData.error || "Failed to delete note.");
-                    }
-
-                    const data = await response.json();
-                    if (data.message) {
-                        alert("Note deleted successfully!");
-                        loadNotes(noteType); // Refresh the notes list for the specific type
-                    }
+                    const response = await fetch(`/api/notes/${noteId}`, { method: 'DELETE' });
+                    if (!response.ok) throw new Error("Failed to delete note.");
+                    alert("Note deleted successfully!");
+                    loadNotes(noteType);
                 } catch (error) {
                     console.error("Error:", error);
                     alert("An error occurred while deleting the note.");
@@ -242,20 +207,13 @@
             }
         }
 
-        // Attach event listeners to the forms
-        document.querySelectorAll('.delete-note-btn').forEach(button => {
-            button.addEventListener('click', (event) => {
-                const noteId = event.target.getAttribute('data-note-id');
-                const noteType = event.target.getAttribute('data-note-type');
-                handleDeleteNote(noteId, noteType);
-            });
-        });
+        // Initialize forms
         document.getElementById('autonomousForm').addEventListener('submit', (event) => saveNote(event, "Autonomous Details"));
         document.getElementById('endgameForm').addEventListener('submit', (event) => saveNote(event, "Endgame Details"));
         document.getElementById('driverForm').addEventListener('submit', (event) => saveNote(event, "Driver Details"));
         document.getElementById('miscForm').addEventListener('submit', (event) => saveNote(event, "Misc"));
 
-        // Load notes when the page loads
+        // Load notes on page load
         loadNotes("Autonomous Details");
         loadNotes("Endgame Details");
         loadNotes("Driver Details");
