@@ -83,10 +83,10 @@ def get_team_events(team_id):
                 break
             page += 1
 
-        return {"data": sort_events_newest_to_oldest(all_events)}
+        return sort_events_newest_to_oldest(all_events)  # Return array directly
     except Exception as e:
         print(f"Error getting team events: {str(e)}")
-        return {"data": []}
+        return []
 
 def get_team_details(team_id):
     try:
@@ -118,10 +118,10 @@ def get_team_skills(team_id):
                 break
             page += 1
             
-        return {"data": all_skills}
+        return all_skills  # Return array directly
     except Exception as e:
         print(f"Error getting team skills: {str(e)}")
-        return {"data": []}
+        return []
 
 # --------------------------------------
 # Application routes
@@ -135,11 +135,12 @@ def api_team_events(team_number):
     try:
         team_id = get_team_id(team_number)
         if not team_id:
-            return jsonify({"error": "Team not found", "data": []}), 404
+            return jsonify([]), 404
+            
         events = get_team_events(team_id)
-        return jsonify(events)
+        return jsonify(events)  # Return array directly
     except Exception as e:
-        return jsonify({"error": str(e), "data": []}), 500
+        return jsonify([]), 500
 
 @app.route('/team/<team_id>')
 def team_details(team_id):
@@ -163,7 +164,7 @@ def team_details(team_id):
         
         return render_template('team-details.html', 
                             team=team, 
-                            skills=skills["data"], 
+                            skills=skills,  # Array directly
                             notes_by_type=notes_by_type)
     except Exception as e:
         print(f"Error in team details: {str(e)}")
@@ -190,7 +191,7 @@ def get_notes(team_id):
     try:
         db = get_db()
         cursor = db.execute('SELECT id, note_type, note FROM notes WHERE team_id = ?', (team_id,))
-        return jsonify({"notes": [dict(note) for note in cursor.fetchall()]}), 200
+        return jsonify([dict(note) for note in cursor.fetchall()]), 200
     except Exception as e:
         print(f"Error fetching notes: {str(e)}")
         return jsonify({"error": "Database error"}), 500
@@ -216,10 +217,7 @@ def event_teams(event_id):
             response = requests.get(url, headers=get_headers(), timeout=10)
             
             if response.status_code != 200:
-                return jsonify({
-                    "error": "Failed to fetch teams",
-                    "status": response.status_code
-                }), 500
+                return jsonify([]), 500
 
             data = response.json()
             all_teams.extend(data.get("data", []))
@@ -228,10 +226,10 @@ def event_teams(event_id):
                 break
             page += 1
 
-        return jsonify({"data": all_teams})
+        return jsonify(all_teams)  # Return array directly
     except Exception as e:
         print(f"Error getting event teams: {str(e)}")
-        return jsonify({"error": str(e)}), 500
+        return jsonify([]), 500
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
